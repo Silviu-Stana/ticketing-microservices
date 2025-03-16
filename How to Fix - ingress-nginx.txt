@@ -1,0 +1,30 @@
+k port-forward --namespace=ingress-nginx service/ingress-nginx-controller 3000:80
+k port-forward nats-depl-XXXX 4222:4222
+k port-forward nats-depl-XXXX 8222:8222
+
+k create secret generic stripe-secret --from-literal STRIPE_KEY=
+
+
+//If ingress-nginx controller stuck 0/1 starting:
+1. Delete validating webhook:
+kubectl delete validatingwebhookconfiguration ingress-nginx-admission
+2. Create missing secret:
+kubectl create secret generic ingress-nginx-admission -n ingress-nginx --from-literal=tls.crt="$(openssl req -x509 -newkey rsa:4096 -keyout /dev/stdout -nodes -subj '/CN=ingress-nginx-admission')" --from-literal=tls.key="$(openssl req -newkey rsa:4096 -keyout /dev/stdout -nodes -subj '/CN=ingress-nginx-admission')"
+3. Create JWT_SECRET:
+kubectl create secret generic jwt-secret --from-literal=JWT_KEY=asdklh
+4. Restart ingress-nginx:
+kubectl rollout restart deployment ingress-nginx-controller -n ingress-nginx
+5. Verify: Running 1/1
+kubectl get pods -n ingress-nginx
+
+I just needed some port forwarding....
+
+Also make sure to visit the url with that port:
+http://ticketing.com:3000/api/users/currentuser
+
+Forwarding from 127.0.0.1:3000 -> 80
+Forwarding from [::1]:3000 -> 80
+Handling connection for 3000
+
+
+
